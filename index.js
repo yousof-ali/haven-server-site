@@ -37,14 +37,35 @@ async function run(){
 
         app.get('/details/:id',async(req,res) => {
             const id = req.params.id;
-            const qurey = {_id : new ObjectId(id)};
-            const result = await estateCollections.findOne(qurey);
+            const query = {_id : new ObjectId(id)};
+            const result = await estateCollections.findOne(query);
             res.send(result)
         })
 
-        app.get('/properties/:id',async(req,res) => {
-            const qurey = req.id;
-            console.log(qurey);
+        app.get('/properties',async(req,res) => {
+            const qbody = req.query.sortBy;
+            let result;
+            if(qbody == 'all'){
+                 result = await estateCollections.find().toArray();
+                
+            }
+            else if(qbody == "hp"){
+                result = await estateCollections.find().sort({price: -1}).toArray();
+            }
+            else if(qbody == "lp"){
+                result = await estateCollections.find().sort({price: 1}).toArray();
+            }
+            else if(qbody == 'rent'){
+                const query = {status:"Rent"};
+                 result = await estateCollections.find(query).toArray();
+                
+            }
+            else if(qbody == 'sale'){
+                const query = {status:"Sale"};
+                 result = await estateCollections.find(query).toArray();
+                
+            }
+            res.send(result);
         })
 
         console.log('connected with mongodb successfully');
