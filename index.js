@@ -1,6 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config();
 
 
@@ -34,6 +34,18 @@ async function run(){
             const result = await cursor.toArray();
             res.send(result);
         });
+
+        app.get('/details/:id',async(req,res) => {
+            const id = req.params.id;
+            const qurey = {_id : new ObjectId(id)};
+            const result = await estateCollections.findOne(qurey);
+            res.send(result)
+        })
+
+        app.get('/properties/:id',async(req,res) => {
+            const qurey = req.id;
+            console.log(qurey);
+        })
 
         console.log('connected with mongodb successfully');
         
