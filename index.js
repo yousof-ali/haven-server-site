@@ -27,6 +27,7 @@ async function run(){
 
         const estateCollections = client.db("haven").collection("homes");
         const userCollections = client.db("haven").collection("users");
+        const bookmarksCollections = client.db("haven").collection('bookmarks')
 
 
         app.get('/homes',async(req,res) => {
@@ -67,6 +68,67 @@ async function run(){
             }
             res.send(result);
         })
+
+        app.get('/segment',async(req,res) => {
+            const opt = req.query.option;
+            let result;
+            if(opt == 'student-housing'){
+               const query = {segment_name:'Student Housing'};
+               result = await estateCollections.find(query).toArray();
+            }
+            else if(opt == 'vacation-rentals'){
+                const query = {segment_name:'Vacation Rentals'};
+               result = await estateCollections.find(query).toArray();
+            }
+            else if(opt == 'family-house'){
+                const query = {segment_name:'Single Family Homes'};
+               result = await estateCollections.find(query).toArray();
+            }
+            else if(opt == 'townhouse'){
+                const query = {segment_name:'Townhouse'};
+               result = await estateCollections.find(query).toArray();
+            }
+            else if(opt == 'apartments'){
+                const query = {segment_name:'Apartment'};
+               result = await estateCollections.find(query).toArray();
+            }
+           
+            res.send(result);
+        });
+        
+        app.post('/bookmarks',async(req,res) => {
+            const body = req.body
+            const query1 = {email:body.email};
+            const query2 = {bookmarkId:body.bookmarkId};
+            const result1 = await bookmarksCollections.find(query1).toArray();
+            const result2 = await bookmarksCollections.find(query2).toArray();
+            if(result1.length && result2.length<1){
+                 const result = await bookmarksCollections.insertOne(body);
+                res.send(result);
+            }else if(result1.length<1) {
+                 const result = await bookmarksCollections.insertOne(body);
+                 res.send(result);
+            }else{
+                res.send({status:"bookmarked"})
+            }
+           
+        })
+        
+        app.get('/bookmark',async(req,res) => {
+            const emails = req.query.email
+            const query = {email : emails}
+            const result = await bookmarksCollections.find(query).toArray()
+            res.send(result);
+        })
+
+        app.delete('/delete-bookmark/:id',async(req,res) => {
+            const ids = req.params.id;
+            const query = {_id : new ObjectId(ids)};
+            const result = await bookmarksCollections.deleteOne(query);
+            res.send(result);
+        })
+
+        
 
         console.log('connected with mongodb successfully');
         
