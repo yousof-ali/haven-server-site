@@ -27,7 +27,8 @@ async function run(){
 
         const estateCollections = client.db("haven").collection("homes");
         const userCollections = client.db("haven").collection("users");
-        const bookmarksCollections = client.db("haven").collection('bookmarks')
+        const bookmarksCollections = client.db("haven").collection('bookmarks');
+        // const userCollections = client.db("haven").collection("users");
 
 
         app.get('/homes',async(req,res) => {
@@ -126,6 +127,17 @@ async function run(){
             const query = {_id : new ObjectId(ids)};
             const result = await bookmarksCollections.deleteOne(query);
             res.send(result);
+        })
+
+        app.post('/users',async(req,res) => {
+            const usersBody = req.body
+            const result = await userCollections.insertOne(usersBody);
+            res.send(result);
+        })
+
+        app.get('/users',async(req,res) => {
+            const result = await userCollections.find().toArray();
+            res.send(result)
         })
 
         
