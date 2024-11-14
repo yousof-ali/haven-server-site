@@ -131,14 +131,32 @@ async function run(){
 
         app.post('/users',async(req,res) => {
             const usersBody = req.body
+            const query = {email:usersBody.email};
+            const query2 = {providerId:usersBody.providerId}
+            const filter = await userCollections.find(query).toArray();
+            const filter2 = await userCollections.find(query2).toArray();
+            console.log(filter2.length);
+            console.log(filter);
+            if(filter.length>1 && filter2.length>1){
+                res.send({alreadyTaken:true})
+            }else{
             const result = await userCollections.insertOne(usersBody);
             res.send(result);
+            console.log(result);
+            }
         });
 
         app.get('/users',async(req,res) => {
             const result = await userCollections.find().toArray();
             res.send(result)
         });
+
+        app.delete('/user-delete/:id',async(req,res) => {
+            const deleteId = req.params.id
+            const query = {_id:new ObjectId(deleteId)};
+            const result = await userCollections.deleteOne(query);
+            res.send(result);
+        })
 
         app.put("/update-profile",async(req,res) => {
             const query = req.query.email;
