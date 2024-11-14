@@ -113,31 +113,47 @@ async function run(){
                 res.send({status:"bookmarked"})
             }
            
-        })
+        });
         
         app.get('/bookmark',async(req,res) => {
             const emails = req.query.email
             const query = {email : emails}
             const result = await bookmarksCollections.find(query).toArray()
             res.send(result);
-        })
+        });
 
         app.delete('/delete-bookmark/:id',async(req,res) => {
             const ids = req.params.id;
             const query = {_id : new ObjectId(ids)};
             const result = await bookmarksCollections.deleteOne(query);
             res.send(result);
-        })
+        });
 
         app.post('/users',async(req,res) => {
             const usersBody = req.body
             const result = await userCollections.insertOne(usersBody);
             res.send(result);
-        })
+        });
 
         app.get('/users',async(req,res) => {
             const result = await userCollections.find().toArray();
             res.send(result)
+        });
+
+        app.put("/update-profile",async(req,res) => {
+            const query = req.query.email;
+            const {name,photo} = req.body;
+           
+            const updateObject = await userCollections.findOneAndUpdate(
+                {email:query},
+                {$set: {displayName:name,photoURL:photo}},
+                {   
+                    new:true,
+                    upsert:true
+                }
+            );
+             
+            res.send({update:true});
         })
 
         
