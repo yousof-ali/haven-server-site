@@ -28,6 +28,7 @@ async function run(){
         const estateCollections = client.db("haven").collection("homes");
         const userCollections = client.db("haven").collection("users");
         const bookmarksCollections = client.db("haven").collection('bookmarks');
+        const newEstateCollections = client.db("haven").collection('newEstate')
         // const userCollections = client.db("haven").collection("users");
 
 
@@ -135,14 +136,12 @@ async function run(){
             const query2 = {providerId:usersBody.providerId}
             const filter = await userCollections.find(query).toArray();
             const filter2 = await userCollections.find(query2).toArray();
-            console.log(filter2.length);
-            console.log(filter);
-            if(filter.length>1 && filter2.length>1){
+            if(filter.length>=1 && filter2.length>=1){
                 res.send({alreadyTaken:true})
             }else{
             const result = await userCollections.insertOne(usersBody);
             res.send(result);
-            console.log(result);
+            
             }
         });
 
@@ -172,7 +171,33 @@ async function run(){
             );
              
             res.send({update:true});
-        })
+        });
+
+        app.put('/update-lastlogin',async(req,res) => {
+            const query = req.query.email
+            const {lastSignInTime} =req.body
+            const updateLastLogin = await userCollections.findOneAndUpdate(
+                {email:query},
+                {$set: {lastSignInTime:lastSignInTime}},
+                {
+                    new:true,
+                    upsert:true
+                }
+            );
+            res.send({update:true});
+        });
+
+
+        app.post('/sale-rent-request',async(req,res) => {
+            const neweState = req.body;
+            const result = await newEstateCollections.insertOne(neweState);
+            res.send(result);
+        });
+        app.get('/get-newestate',async(req,res) => {
+            const result = await newEstateCollections.find().toArray();
+            res.send(result);
+        }
+        )
 
         
 
