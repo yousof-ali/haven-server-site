@@ -45,6 +45,12 @@ async function run(){
             res.send(result)
         })
 
+        app.post('/addnew-estate', async(req,res) => {
+            const newEstate = req.body;
+            const result = await estateCollections.insertOne(newEstate);
+            res.send(result)
+        })
+
         app.get('/properties',async(req,res) => {
             const qbody = req.query.sortBy;
             let result;
@@ -187,7 +193,8 @@ async function run(){
             res.send({update:true});
         });
 
-
+       
+        // pending
         app.post('/sale-rent-request',async(req,res) => {
             const neweState = req.body;
             const result = await newEstateCollections.insertOne(neweState);
@@ -197,7 +204,30 @@ async function run(){
             const result = await newEstateCollections.find().toArray();
             res.send(result);
         }
-        )
+        );
+
+        app.get('/pending-details/:id',async(req,res) => {
+            const ids = req.params.id;
+            const query = {_id:new ObjectId(ids)};
+            const result = await newEstateCollections.findOne(query);
+            res.send(result);
+        });
+        
+        app.put('/aprove/:id',async(req,res) => {
+            const ids = req.params.id;
+            const {requestStatus} = req.body
+            const result = await newEstateCollections.findOneAndUpdate(
+                {_id : new ObjectId(ids)},
+                {$set: {requestStatus:requestStatus}},
+                {
+                    new:true,
+                    upsert:true
+                }
+
+            )
+            res.send(result)
+            
+        })
 
         
 
