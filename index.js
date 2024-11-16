@@ -107,18 +107,28 @@ async function run(){
         app.post('/bookmarks',async(req,res) => {
             const body = req.body
             const query1 = {email:body.email};
-            const query2 = {bookmarkId:body.bookmarkId};
+            
             const result1 = await bookmarksCollections.find(query1).toArray();
-            const result2 = await bookmarksCollections.find(query2).toArray();
-            if(result1.length && result2.length<1){
-                 const result = await bookmarksCollections.insertOne(body);
+            console.log(result1)
+            const filter = result1.filter(single => single.bookmarkId == body.bookmarkId);
+            if(filter.length<1){
+                const result = await bookmarksCollections.insertOne(body);
                 res.send(result);
-            }else if(result1.length<1) {
-                 const result = await bookmarksCollections.insertOne(body);
-                 res.send(result);
             }else{
-                res.send({status:"bookmarked"})
+                res.send({status:"bookmarked"});
             }
+            // console.log(result);
+            // const result2 = await bookmarksCollections.find(query2).toArray();
+            // console.log(result2);
+            // if(result1.length && result2.length<1){
+                //  const result = await bookmarksCollections.insertOne(body);
+                // res.send(result);
+            // }else if(result1.length<1) {
+            //     //  const result = await bookmarksCollections.insertOne(body);
+            //     //  res.send(result);
+            // }else{
+            //     // res.send({status:"bookmarked"})
+            // }
            
         });
         
