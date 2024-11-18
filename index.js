@@ -33,9 +33,39 @@ async function run(){
 
 
         app.get('/homes',async(req,res) => {
-            const cursor = estateCollections.find();
-            const result = await cursor.toArray();
+            const query = req.query.sortBy
+            let result;
+            if(!query){
+                result = await estateCollections.find().toArray();
+               
+            }
+            else if(query == 'all'){
+                 result = await estateCollections.find().toArray();
+                
+                
+            }
+            else if(query == "hp"){
+                result = await estateCollections.find().sort({price: -1}).toArray();
+               
+            }
+            else if(query == "lp"){
+                result = await estateCollections.find().sort({price: 1}).toArray();
+               
+            }
+            else if(query == 'rent'){
+                const query = {status:"Rent"};
+                 result = await estateCollections.find(query).toArray();
+                
+                
+            }
+            else if(query == 'sale'){
+                const query = {status:"Sale"};
+                 result = await estateCollections.find(query).toArray();
+                
+                
+            }
             res.send(result);
+            
         });
 
         app.get('/details/:id',async(req,res) => {
@@ -43,6 +73,37 @@ async function run(){
             const query = {_id : new ObjectId(id)};
             const result = await estateCollections.findOne(query);
             res.send(result)
+        });
+
+        app.put('/update/:id',async(req,res) => {
+            const id = req.params.id;
+            const {area,description,facilities,img,location,price,segment_name,status,title} = req.body
+            console.log(id);
+            const result = await estateCollections.findOneAndUpdate(
+                {_id:new ObjectId(id)},
+                {$set: {area:area,
+                    description:description,
+                    facilities:facilities,
+                    img:img,
+                    location:location,
+                    price:price,
+                    segment_name:segment_name,
+                    status:status,
+                    title:title
+                }},
+                {   
+                    new:true,
+                    upsert:true
+                }
+            )
+            res.send(result);
+        })
+       
+        app.get('/aproved',async(req,res) => {
+            const query = req.query.email
+            const query2 = {email:query};
+            const result = await estateCollections.find(query2).toArray();
+            res.send(result);
         })
 
         app.post('/addnew-estate', async(req,res) => {
@@ -51,31 +112,31 @@ async function run(){
             res.send(result)
         })
 
-        app.get('/properties',async(req,res) => {
-            const qbody = req.query.sortBy;
-            let result;
-            if(qbody == 'all'){
-                 result = await estateCollections.find().toArray();
+        // app.get('/properties',async(req,res) => {
+        //     const qbody = req.query.sortBy;
+        //     let result;
+        //     if(qbody == 'all'){
+        //          result = await estateCollections.find().toArray();
                 
-            }
-            else if(qbody == "hp"){
-                result = await estateCollections.find().sort({price: -1}).toArray();
-            }
-            else if(qbody == "lp"){
-                result = await estateCollections.find().sort({price: 1}).toArray();
-            }
-            else if(qbody == 'rent'){
-                const query = {status:"Rent"};
-                 result = await estateCollections.find(query).toArray();
+        //     }
+        //     else if(qbody == "hp"){
+        //         result = await estateCollections.find().sort({price: -1}).toArray();
+        //     }
+        //     else if(qbody == "lp"){
+        //         result = await estateCollections.find().sort({price: 1}).toArray();
+        //     }
+        //     else if(qbody == 'rent'){
+        //         const query = {status:"Rent"};
+        //          result = await estateCollections.find(query).toArray();
                 
-            }
-            else if(qbody == 'sale'){
-                const query = {status:"Sale"};
-                 result = await estateCollections.find(query).toArray();
+        //     }
+        //     else if(qbody == 'sale'){
+        //         const query = {status:"Sale"};
+        //          result = await estateCollections.find(query).toArray();
                 
-            }
-            res.send(result);
-        })
+        //     }
+        //     res.send(result);
+        // })
 
         app.get('/segment',async(req,res) => {
             const opt = req.query.option;
@@ -214,7 +275,15 @@ async function run(){
             const result = await newEstateCollections.find().toArray();
             res.send(result);
         }
+        
         );
+
+        app.get('/newEstate',async(req,res) =>{
+            const query = req.query.email;
+            const query2 = {email:query};
+            const result = await newEstateCollections.find(query2).toArray();
+            res.send(result);
+        })
 
         app.get('/pending-details/:id',async(req,res) => {
             const ids = req.params.id;
