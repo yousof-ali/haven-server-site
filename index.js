@@ -28,44 +28,77 @@ async function run(){
         const estateCollections = client.db("haven").collection("homes");
         const userCollections = client.db("haven").collection("users");
         const bookmarksCollections = client.db("haven").collection('bookmarks');
-        const newEstateCollections = client.db("haven").collection('newEstate')
+        const newEstateCollections = client.db("haven").collection('newEstate');
+        const bookingCollections = client.db('haven').collection('booking');
         // const userCollections = client.db("haven").collection("users");
+         
 
+        // estateCollections
 
         app.get('/homes',async(req,res) => {
-            const query = req.query.sortBy
-            let result;
-            if(!query){
-                result = await estateCollections.find().toArray();
-               
-            }
-            else if(query == 'all'){
-                 result = await estateCollections.find().toArray();
-                
-                
-            }
-            else if(query == "hp"){
-                result = await estateCollections.find().sort({price: -1}).toArray();
-               
-            }
-            else if(query == "lp"){
-                result = await estateCollections.find().sort({price: 1}).toArray();
-               
-            }
-            else if(query == 'rent'){
-                const query = {status:"Rent"};
-                 result = await estateCollections.find(query).toArray();
-                
-                
-            }
-            else if(query == 'sale'){
-                const query = {status:"Sale"};
-                 result = await estateCollections.find(query).toArray();
-                
-                
-            }
+            const result = await estateCollections.find().toArray();
             res.send(result);
             
+        });
+
+
+
+        // for pagination
+
+        app.get('/sale-rent',async(req,res) => {
+            const query = req.query.searchBy
+            let result
+            if(query !== 'rent' && query!=='sale'){
+                result= await estateCollections.find().toArray();
+
+            }else{
+                if(query == 'rent'){
+                    const query = {status:"Rent"};
+                    result = await estateCollections.find(query).toArray();
+
+                }else if(query == 'sale'){
+                    const query = {status:"Sale"};
+                    result = await estateCollections.find(query).toArray();
+                }
+            }
+            
+
+            res.send({total:result.length})     
+        });
+
+        app.get('/pagination',async(req,res) => {
+            const pageNo = parseInt(req.query.page)
+            const dataLength = parseInt(req.query.size)
+            const sortedBy = req.query.sortBy
+            
+            let result
+            if(sortedBy =='all'){
+                result = await estateCollections.find().skip(pageNo*dataLength).limit(dataLength).toArray()
+
+            }
+            else if(sortedBy == 'hp'){
+                result = await estateCollections.find().skip(pageNo*dataLength).limit(dataLength).sort({price: -1}).toArray();
+            }
+            else if(sortedBy == 'lp'){
+                result = await estateCollections.find().skip(pageNo*dataLength).limit(dataLength).sort({price: 1}).toArray();
+            }
+            else if(sortedBy == 'rent'){
+                const query = {status:"Rent"};
+                 result = await estateCollections.find(query).skip(pageNo*dataLength).limit(dataLength).toArray();
+                
+            }
+            else if(sortedBy == 'sale'){
+                const query = {status:"Sale"};
+                 result = await estateCollections.find(query).skip(pageNo*dataLength).limit(dataLength).toArray();
+            }
+
+            res.send(result);
+        });
+
+        app.get('/homes-length',async(req,res) => {
+            const count = await estateCollections.estimatedDocumentCount();
+            res.send({count});
+
         });
 
         app.get('/details/:id',async(req,res) => {
@@ -164,13 +197,15 @@ async function run(){
            
             res.send(result);
         });
-        
+
+
+
+        // bookmarksCollections
         app.post('/bookmarks',async(req,res) => {
             const body = req.body
             const query1 = {email:body.email};
             
             const result1 = await bookmarksCollections.find(query1).toArray();
-            console.log(result1)
             const filter = result1.filter(single => single.bookmarkId == body.bookmarkId);
             if(filter.length<1){
                 const result = await bookmarksCollections.insertOne(body);
@@ -207,6 +242,8 @@ async function run(){
             res.send(result);
         });
 
+
+        // usersCollections
         app.post('/users',async(req,res) => {
             const usersBody = req.body
             const query = {email:usersBody.email};
@@ -264,8 +301,9 @@ async function run(){
             res.send({update:true});
         });
 
+
        
-        // pending
+        // newEstate collections
         app.post('/sale-rent-request',async(req,res) => {
             const neweState = req.body;
             const result = await newEstateCollections.insertOne(neweState);
@@ -274,9 +312,7 @@ async function run(){
         app.get('/get-newestate',async(req,res) => {
             const result = await newEstateCollections.find().toArray();
             res.send(result);
-        }
-        
-        );
+        });
 
         app.get('/newEstate',async(req,res) =>{
             const query = req.query.email;
@@ -292,21 +328,80 @@ async function run(){
             res.send(result);
         });
         
-        app.put('/aprove/:id',async(req,res) => {
+        app.put('/pending-update/:id',async(req,res) => {
             const ids = req.params.id;
-            const {requestStatus} = req.body
+            const {requestStatus,img,title,segment_name,description,price,status,area,location,facilities} = req.body          
             const result = await newEstateCollections.findOneAndUpdate(
                 {_id : new ObjectId(ids)},
-                {$set: {requestStatus:requestStatus}},
+                {$set: {area:area,
+                    description:description,
+                    facilities:facilities,
+                    img:img,
+                    location:location,
+                    price:price,
+                    segment_name:segment_name,
+                    status:status,
+                    title:title,
+                    requestStatus:requestStatus
+                }},
                 {
                     new:true,
                     upsert:true
                 }
 
-            )
-            res.send(result)
+            );
+            res.send(result);
+        });
+
+
+        app.put('/admin-aprove/:id',async(req,res) => {
+             const ids = req.params.id;
             
+             const {requestStatus} = req.body
+             const result = await newEstateCollections.findOneAndUpdate(
+                {_id : new ObjectId(ids)},
+                {$set: {requestStatus:requestStatus
+                }},
+                {
+                    new:true,
+                    upsert:true
+                });
+            res.send(result);    
+        });
+
+
+
+        // bookingCollections
+        app.post('/booking',async(req,res) => {
+            const body = req.body
+            const result = await bookingCollections.insertOne(body)
+            res.send(result);
+        });
+
+        app.get('/all-bookings',async(req,res) => {          
+                 const result = await bookingCollections.find().toArray()
+                 res.send(result);
+        });
+
+        
+        app.get('/bookings/person',async(req,res) => {
+            const option = {email:req.query.email,}
+            const result = await bookingCollections.find(option).toArray()
+            res.send(result);
+
         })
+        // app.get('/checkisBooking',async(req,res) => {
+        //     const option1 = {email:req.query.email}
+        //     const option2 = {productId:req.query.bookingId}
+        //     const result1 = await bookingCollections.find(option1).toArray()
+        //     const result2 = await bookingCollections.find(option2).toArray()
+        //     // if(result1.length<0 && result2<0){
+        //     //     res.send({booking:false});
+        //     //     console.log('yes')
+        //     // }
+        //     console.log(result1.length)
+        //     console.log(result2.length)
+        // })
 
         
 
