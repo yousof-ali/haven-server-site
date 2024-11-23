@@ -1,14 +1,24 @@
 const express = require('express');
 const cors = require('cors');
+const jwt = require('jsonwebtoken');
+const cookieParser = require('cookie-parser');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config();
-
-
 const app = express();
 const port = process.env.PORT || 5000
 
-app.use(cors());
+
+
+app.use(cors({
+    origin:[
+        'http://localhost:5173',
+        'http://localhost:5174'
+    ],
+    credentials:true
+}));
 app.use(express.json());
+app.use(cookieParser())
+
 
 const url = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.lewcb.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
@@ -19,6 +29,12 @@ const client = new MongoClient(url,{
         deprecationErrors:true,
     }
 })
+
+const cookieOption = {
+    httpOnly:true,
+    sameSite:process.env.NODE_ENV === 'production'?'none':'strict',
+    secure:process.env.NODE_ENV === 'production'? true:false
+  }
 
 async function run(){
     try{
@@ -33,6 +49,26 @@ async function run(){
         // const userCollections = client.db("haven").collection("users");
          
 
+        // cookie
+        // create a cookie 
+        app.post('/jwt',async(req,res) => {
+            const userEmail = req.body
+            const token = jwt.sign(userEmail,process.env.ACCESS_TOKEN_SECRET,{expiresIn:'3h'});
+            console.log(token);
+
+            res
+            .cookie('token',token,cookieOption)
+            .send({createToken:token});
+        });
+
+        app.post('/logout',async(req,res) =>{
+            
+            res
+            .clearCookie('token',{...cookieOption,maxAge:0})
+            .send({removedToken:true});
+        })
+
+
         // estateCollections
 
         app.get('/homes',async(req,res) => {
@@ -41,7 +77,12 @@ async function run(){
             
         });
 
-
+        app.delete('/delete-estate/:id',async(req,res) => {
+            const ids = req.params.id;
+            const query = {_id : new ObjectId(ids)}
+            const result = await estateCollections.deleteOne(query);
+            res.send(result);
+        })
 
         // for pagination
 
