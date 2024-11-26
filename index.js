@@ -4,20 +4,23 @@ const jwt = require('jsonwebtoken');
 const cookieParser = require('cookie-parser');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config();
+
 const app = express();
-const port = process.env.PORT || 5000
+const port = process.env.PORT || 5000;
 
 
 
 app.use(cors({
     origin:[
         'http://localhost:5173',
-        'http://localhost:5174'
+        'http://localhost:5174',
+        'https://haven-d2f54.web.app',
+        'https://haven-d2f54.firebaseapp.com'
     ],
     credentials:true
 }));
 app.use(express.json());
-app.use(cookieParser())
+app.use(cookieParser());
 
 
 const url = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.lewcb.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
@@ -28,18 +31,34 @@ const client = new MongoClient(url,{
         strict:true,
         deprecationErrors:true,
     }
-})
+});
 
 const cookieOption = {
     httpOnly:true,
     sameSite:process.env.NODE_ENV === 'production'?'none':'strict',
     secure:process.env.NODE_ENV === 'production'? true:false
-  }
+  };
+
+
+//   middlewares
+const verifyToken = (req,res,next) => {
+    const tok = req.cookies.token
+    if(!tok) {
+        return res.status(401).send({message:"Unauthorized"});
+    };
+    jwt.verify(tok,process.env.ACCESS_TOKEN_SECRET,(err,decoded) => {
+        if(err){
+            return res.status(401).send({message:"Unauthorized access"});
+        };
+        req.user = decoded;
+        next()
+    })
+}
 
 async function run(){
     try{
 
-        await client.connect();
+        // await client.connect();
 
         const estateCollections = client.db("haven").collection("homes");
         const userCollections = client.db("haven").collection("users");
@@ -54,7 +73,7 @@ async function run(){
         app.post('/jwt',async(req,res) => {
             const userEmail = req.body
             const token = jwt.sign(userEmail,process.env.ACCESS_TOKEN_SECRET,{expiresIn:'3h'});
-            console.log(token);
+            
 
             res
             .cookie('token',token,cookieOption)
@@ -269,10 +288,13 @@ async function run(){
            
         });
         
-        app.get('/bookmark',async(req,res) => {
-            const emails = req.query.email
-            const query = {email : emails}
-            const result = await bookmarksCollections.find(query).toArray()
+        app.get('/bookmark',verifyToken,async(req,res) => {
+            if(req.query.email !== req.user.email){
+                return res.status(403).send({message:'forbidden access'});
+            };
+            const emails = req.query.email;
+            const query = {email : emails};
+            const result = await bookmarksCollections.find(query).toArray();
             res.send(result);
         });
 
@@ -425,9 +447,12 @@ async function run(){
         });
 
         
-        app.get('/bookings/person',async(req,res) => {
-            const option = {email:req.query.email,}
-            const result = await bookingCollections.find(option).toArray()
+        app.get('/bookings/person',verifyToken,async(req,res) => {
+            if(req.query.email !== req.user.email){
+                return res.status(403).send({message:'forbidden access'});
+            };
+            const option = {email:req.query.email,};
+            const result = await bookingCollections.find(option).toArray();
             res.send(result);
 
         })
